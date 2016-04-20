@@ -1,4 +1,4 @@
- build
- .build_release
- build/
- .build_release/
+build
+.build_release
+build/
+.build_release/
