@@ -10,7 +10,6 @@
 
 namespace caffe {
 
-
 //CQ_TEST
 template<typename Dtype>
 void DataTransformer<Dtype>::TransformImgAndLab(const std::vector<cv::Mat>& cv_img_seg,
@@ -32,7 +31,7 @@ void DataTransformer<Dtype>::TransformImgAndLab(const std::vector<cv::Mat>& cv_i
   const int label_channels = transformed_label_blob->channels();
   const int label_height   = transformed_label_blob->height();
   const int label_width    = transformed_label_blob->width();
-  
+
   CHECK_EQ(seg_channels, 1);
   CHECK_EQ(img_channels, data_channels);
   CHECK_EQ(img_height, seg_height);

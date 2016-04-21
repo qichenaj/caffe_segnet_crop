@@ -184,9 +184,9 @@ void DenseImageDataLayer<Dtype>::InternalThreadEntry() {
     //     this->layer_param_.transform_param().crop_size() == 0) 
     //     << "FIXME: Any stochastic transformation will break layer due to "
     //     << "the need to transform input and label images in the same way";
-    CHECK(!this->layer_param_.transform_param().mirror()) 
-        << "FIXME: Any stochastic transformation will break layer due to "
-        << "the need to transform input and label images in the same way";
+    // CHECK(!this->layer_param_.transform_param().mirror()) 
+    //     << "FIXME: Any stochastic transformation will break layer due to "
+    //     << "the need to transform input and label images in the same way";
     trans_time += timer.MicroSeconds();
 
     // go to the next iter
