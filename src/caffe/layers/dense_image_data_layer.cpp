@@ -27,10 +27,20 @@ void DenseImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bott
   const int new_width  = this->layer_param_.dense_image_data_param().new_width();
   const bool is_color  = this->layer_param_.dense_image_data_param().is_color();
   string root_folder = this->layer_param_.dense_image_data_param().root_folder();
-    
+
+
+  //const int label_type = this->layer_param_.dense_image_data_param().label_type();  //add by CQ_TEST
+
+  
   CHECK((new_height == 0 && new_width == 0) ||
       (new_height > 0 && new_width > 0)) << "Current implementation requires "
       "new_height and new_width to be set at the same time.";
+
+
+  TransformationParameter transform_param = this->layer_param_.transform_param();    //add by CQ_TEST
+
+  CHECK(transform_param.has_mean_file() == false) << "DenseImageDataLayer does not support mean file";
+
   // Read the file with filenames and labels
   const string& source = this->layer_param_.dense_image_data_param().source();
   LOG(INFO) << "Opening file " << source;
@@ -123,6 +133,7 @@ void DenseImageDataLayer<Dtype>::InternalThreadEntry() {
   const int crop_size = this->layer_param_.transform_param().crop_size();
   const bool is_color = dense_image_data_param.is_color();
   string root_folder = dense_image_data_param.root_folder();
+  const int ignore_label = dense_image_data_param.ignore_label();  //CQ_TEST
 
   // Reshape on single input batches for inputs of varying dimension.
   if (batch_size == 1 && crop_size == 0 && new_height == 0 && new_width == 0) {
@@ -140,28 +151,40 @@ void DenseImageDataLayer<Dtype>::InternalThreadEntry() {
   // datum scales
   const int lines_size = lines_.size();
   for (int item_id = 0; item_id < batch_size; ++item_id) {
+    std::vector<cv::Mat> cv_img_seg;   //CQ_TEST  for transform image and label simultaneously
+
     // get a blob
     timer.Start();
     CHECK_GT(lines_size, lines_id_);
     cv::Mat cv_img = ReadImageToCVMat(root_folder + lines_[lines_id_].first,
         new_height, new_width, is_color);
     CHECK(cv_img.data) << "Could not load " << lines_[lines_id_].first;
+    cv_img_seg.push_back(cv_img); // CQ_TEST
+
     cv::Mat cv_lab = ReadImageToCVMat(root_folder + lines_[lines_id_].second,
         new_height, new_width, false, true);
     CHECK(cv_lab.data) << "Could not load " << lines_[lines_id_].second;
+    cv_img_seg.push_back(cv_lab); // CQ_TEST
+
     read_time += timer.MicroSeconds();
     timer.Start();
     // Apply transformations (mirror, crop...) to the image
     int offset = this->prefetch_data_.offset(item_id);
     this->transformed_data_.set_cpu_data(prefetch_data + offset);
-    this->data_transformer_->Transform(cv_img, &(this->transformed_data_));
+    //this->data_transformer_->Transform(cv_img, &(this->transformed_data_));
+
     // transform label the same way
     int label_offset = this->prefetch_label_.offset(item_id);
     this->transformed_label_.set_cpu_data(prefetch_label + label_offset);
     
-    this->data_transformer_->Transform(cv_lab, &this->transformed_label_, true);
-    CHECK(!this->layer_param_.transform_param().mirror() &&
-        this->layer_param_.transform_param().crop_size() == 0) 
+    //this->data_transformer_->Transform(cv_lab, &this->transformed_label_, true);
+
+    this->data_transformer_->TransformImgAndLab(cv_img_seg, &(this->transformed_data_), &(this->transformed_label_), ignore_label);
+    // CHECK(!this->layer_param_.transform_param().mirror() &&
+    //     this->layer_param_.transform_param().crop_size() == 0) 
+    //     << "FIXME: Any stochastic transformation will break layer due to "
+    //     << "the need to transform input and label images in the same way";
+    CHECK(!this->layer_param_.transform_param().mirror()) 
         << "FIXME: Any stochastic transformation will break layer due to "
         << "the need to transform input and label images in the same way";
     trans_time += timer.MicroSeconds();

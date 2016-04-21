@@ -530,7 +530,17 @@ message DenseImageDataParameter {
   optional bool is_color = 7 [default = true];
   optional string mean_file = 8;
   optional string root_folder = 9 [default = ""];
+
+  enum LabelType {
+     NONE = 0;
+     IMAGE = 1;
+     PIXEL = 2;
+     BBX = 3;
+   }
+  optional LabelType label_type = 13 [default = IMAGE];
+  optional int32 ignore_label = 14 [default = 255];
 }
+
 message DropoutParameter {
   optional float dropout_ratio = 1 [default = 0.5]; // dropout ratio
   optional bool sample_weights_test = 2 [default = false]; // Sample weights for testing or use the mean
@@ -600,7 +610,7 @@ message HDF5DataParameter {
   // Specify whether to shuffle the data.
   // If shuffle == true, the ordering of the HDF5 files is shuffled,
   // and the ordering of data within any given HDF5 file is shuffled,
-  // but data between different files are not interleaved; all of a file's
+  // but data between different files are not interleaved; all of a file
   // data are output (in a random order) before moving onto another file.
   optional bool shuffle = 3 [default = false];
 }
